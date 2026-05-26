@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursemirror';
-$plugin->version = 2026052600;
+$plugin->version = 2026052607;
 $plugin->requires = 2024100700;
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '0.1.0_Obstreperous-Okapi';
+$plugin->maturity = MATURITY_BETA;
+$plugin->release = '0.9.0_Obstreperous-Okapi';
