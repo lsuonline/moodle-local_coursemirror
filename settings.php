@@ -51,8 +51,11 @@ if ($hassiteconfig) {
     if ($DB->get_manager()->table_exists('enrol_wds_periods')) {
         $records = $DB->get_records_sql("
             SELECT academic_period_id, academic_period_id AS label
-              FROM {enrol_wds_periods}
-          ORDER BY academic_period_id ASC
+                 FROM {enrol_wds_periods}
+             WHERE enabled = 1
+         ORDER BY period_year DESC,
+             period_type ASC,
+             academic_period_id ASC
         ");
 
         foreach ($records as $record) {
