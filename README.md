@@ -11,7 +11,6 @@ Only courses that **do not already exist** in the remote Moodle are created.
 A course is considered existing if **any** of the following fields match:
 
 - `shortname`
-- `fullname`
 - `idnumber`
 
 This prevents accidental duplicate course creation.
@@ -27,7 +26,6 @@ This prevents accidental duplicate course creation.
 - Synchronization logging
 - Course existence checks by:
   - shortname
-  - fullname
   - idnumber
 - Preserves source course category
 - Preserves selected course metadata:
@@ -176,19 +174,17 @@ Before creating a course remotely, the plugin checks whether a matching course a
 The following fields are checked independently:
 
 1. `shortname`
-2. `fullname`
 3. `idnumber`
 
 If **any** field matches, the course is treated as already existing and will **not** be created.
 
 Example:
 
-| shortname | fullname | idnumber | Result |
-|------------|------------|------------|--------|
-| no match | no match | match | skipped |
-| no match | match | no match | skipped |
-| match | no match | no match | skipped |
-| no matches | no matches | no matches | created |
+| shortname | idnumber | Result |
+|------------|------------|--------|
+| no match | match | skipped |
+| match | no match | skipped |
+| no matches | no matches | created |
 
 This conservative approach helps avoid duplicate course creation.
 
@@ -284,7 +280,6 @@ Stored information includes:
 
 - Moodle course ID
 - shortname
-- fullname
 - idnumber
 - status
 - message
@@ -354,7 +349,6 @@ Also verify that selected academic periods actually return courses.
 A course is skipped if **any** of these match remotely:
 
 - shortname
-- fullname
 - idnumber
 
 Review the remote Moodle for naming collisions.
@@ -551,20 +545,14 @@ At minimum, enable:
 
 ```text
 moodle/course:create
+moodle/course:update
 moodle/course:view
 moodle/course:visibility
+moodle/course:viewhiddencourses
 moodle/category:manage
 moodle/category:viewcourselist
 moodle/category:viewhiddencategories
 ```
-
-Depending on remote Moodle configuration, the service user may also need:
-
-```text
-moodle/course:update
-```
-
-Only add broader permissions if the token fails due to missing capabilities.
 
 Save the role.
 

@@ -105,7 +105,7 @@ class external_client {
      * Determine whether a course already exists in the remote Moodle.
      *
      * A course is considered existing if any one of these fields matches:
-     * shortname, fullname, or idnumber.
+     * shortname or idnumber.
      *
      * @param \stdClass $course Local Moodle course object.
      * @return bool True if the course exists remotely.
