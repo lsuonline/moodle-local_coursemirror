@@ -552,15 +552,16 @@ At minimum, enable:
 ```text
 moodle/course:create
 moodle/course:view
+moodle/course:visibility
+moodle/category:manage
 moodle/category:viewcourselist
+moodle/category:viewhiddencategories
 ```
 
 Depending on remote Moodle configuration, the service user may also need:
 
 ```text
 moodle/course:update
-moodle/course:visibility
-moodle/category:manage
 ```
 
 Only add broader permissions if the token fails due to missing capabilities.
