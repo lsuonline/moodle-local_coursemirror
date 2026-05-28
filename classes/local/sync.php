@@ -72,6 +72,7 @@ class sync {
             $summary['checked']++;
 
             try {
+
                 if ($client->course_exists($course)) {
                     $summary['skipped']++;
                     self::log($course, 'skipped', 'Course already exists remotely.');
@@ -79,7 +80,11 @@ class sync {
                     continue;
                 }
 
-                $client->create_course($course, $createvisible);
+                // Fetch the category info.
+                $category = $DB->get_record('course_categories', ['id' => $course->category], '*', MUST_EXIST);
+
+                // Create the course and if the category does not exist, create that too.
+                $client->create_course($course, $category, $createvisible);
 
                 $summary['created']++;
                 self::log($course, 'created', 'Course created remotely.');

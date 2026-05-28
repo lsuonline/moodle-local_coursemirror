@@ -86,15 +86,8 @@ if ($run && confirm_sesskey() && $confirm) {
 }
 
 echo $OUTPUT->heading(get_string('viewlogs', 'local_coursemirror'), 3);
-
-$logs = $DB->get_records(
-    'local_coursemirror_log',
-    null,
-    'timecreated DESC',
-    '*',
-    0,
-    50
-);
+$sql = "SELECT * FROM {local_coursemirror_log} WHERE status != 'skipped' ORDER BY timecreated DESC LIMIT 100";
+$logs = $DB->get_records_sql($sql);
 
 $table = new html_table();
 $table->head = [

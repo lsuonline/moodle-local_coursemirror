@@ -75,7 +75,7 @@ class external_client {
         ]);
 
         $curl = new \curl();
-        $response = $curl->post($url, $params);
+        $response = $curl->post($url, http_build_query($params, '', '&'));
         $decoded = json_decode($response, true);
 
         if ($decoded === null) {
@@ -112,7 +112,7 @@ class external_client {
      * @throws \moodle_exception If the remote lookup fails.
      */
     public function course_exists(\stdClass $course): bool {
-        foreach (['shortname', 'fullname', 'idnumber'] as $field) {
+        foreach (['shortname', 'idnumber'] as $field) {
             if (empty($course->{$field})) {
                 continue;
             }
@@ -133,22 +133,28 @@ class external_client {
     /**
      * Create a course in the remote Moodle instance.
      *
-     * The source course category is preserved.
+     * The source course category is resolved on the remote Moodle by category
+     * idnumber first, then by category name. If no matching category exists,
+     * the category is created remotely.
      *
      * @param \stdClass $course Local Moodle course object.
+     * @param \stdClass $category Local Moodle course category object.
      * @param bool $visible Whether the remote course should be visible.
      * @return void
      * @throws \moodle_exception If the remote course creation fails.
      */
     public function create_course(
         \stdClass $course,
+        \stdClass $category,
         bool $visible
     ): void {
+
+        $remotecategoryid = $this->get_or_create_category($category);
 
         $newcourse = [
             'fullname' => $course->fullname,
             'shortname' => $course->shortname,
-            'categoryid' => (int)$course->category,
+            'categoryid' => $remotecategoryid,
             'visible' => $visible ? 1 : 0,
         ];
 
@@ -163,10 +169,6 @@ class external_client {
 
         if (!empty($course->format)) {
             $newcourse['format'] = $course->format;
-        }
-
-        if (!empty($course->lang)) {
-            $newcourse['lang'] = $course->lang;
         }
 
         if (!empty($course->startdate)) {
@@ -207,5 +209,106 @@ class external_client {
                 'courses' => [$newcourse],
             ]
         );
+    }
+
+    /**
+     * Get or create a matching course category on the remote Moodle.
+     *
+     * Categories are matched by idnumber first. If the local category does not
+     * have an idnumber, the remote category is matched by name.
+     *
+     * @param \stdClass $category Local Moodle course category object.
+     * @return int Remote Moodle category ID.
+     * @throws \moodle_exception If the category lookup or creation fails.
+     */
+    private function get_or_create_category(\stdClass $category): int {
+        $remotecategory = $this->get_remote_category($category);
+
+        if (!empty($remotecategory['id'])) {
+            return (int)$remotecategory['id'];
+        }
+        return $this->create_category($category);
+    }
+
+    /**
+     * Search for a matching remote Moodle category.
+     *
+     * @param \stdClass $category Local Moodle course category object.
+     * @return array Matching remote category data, or empty array if not found.
+     * @throws \moodle_exception If the category lookup fails.
+     */
+    private function get_remote_category(\stdClass $category): array {
+        if (!empty($category->idnumber)) {
+            $matches = $this->call('core_course_get_categories', [
+                'criteria' => [
+                    [
+                        'key' => 'idnumber',
+                        'value' => $category->idnumber,
+                    ],
+                ],
+            ]);
+
+            if (!empty($matches)) {
+                return reset($matches);
+            }
+        }
+
+        if (!empty($category->name)) {
+            $matches = $this->call('core_course_get_categories', [
+                'criteria' => [
+                    [
+                        'key' => 'name',
+                        'value' => $category->name,
+                    ],
+                ],
+            ]);
+
+            if (!empty($matches)) {
+                return reset($matches);
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Create a matching category on the remote Moodle.
+     *
+     * This creates a top-level category unless the remote Moodle already contains
+     * a matching parent category by idnumber or name.
+     *
+     * @param \stdClass $category Local Moodle course category object.
+     * @return int Newly created remote category ID.
+     * @throws \moodle_exception If category creation fails.
+     */
+    private function create_category(\stdClass $category): int {
+        $newcategory = [
+            'name' => $category->name,
+        ];
+
+        if (!empty($category->idnumber)) {
+            $newcategory['idnumber'] = $category->idnumber;
+        }
+
+        if (!empty($category->description)) {
+            $newcategory['description'] = $category->description;
+            $newcategory['descriptionformat'] = $category->descriptionformat ?? FORMAT_HTML;
+        }
+
+        $result = $this->call('core_course_create_categories', [
+            'categories' => [$newcategory],
+        ]);
+
+        if (empty($result[0]['id'])) {
+            throw new \moodle_exception(
+                'errorremote',
+                'local_coursemirror',
+                '',
+                null,
+                'Remote category creation succeeded but did not return a category ID.'
+            );
+        }
+
+        return (int)$result[0]['id'];
     }
 }
